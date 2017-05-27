@@ -1,0 +1,206 @@
+---
+title: "Kurzeinführung in R"
+output:
+  github_document:
+    html_preview: no
+---
+
+
+R ist eine gratis Software zum statistischen Rechnen und Erstellen von Grafiken.
+
+Nach der Installation kann man R auf verschiedene Weisen benutzen:
+
+1. Als Programm auf in dem man auf der Kommandozeile einfach `R` eintippt.
+2. als einfache grafische Benutzeroberfläche, oder
+3. in dem man `RStudio` öffnet.
+
+## R als Taschenrechner benutzen
+
+Man kann R ganz einfach als Taschenrechner benutzen, in dem man Rechenanweisungen eintippt und dann Enter drückt:
+
+```{r}
+6 * 7 + 1.4
+```
+
+Natürlich kann man auch über eine Vielzahl an eingebauten Rechen-Funktionen verfügen:
+
+```{r}
+sqrt(81)
+cos(3.1415)
+```
+
+## Variablen
+
+Zwischenergebnisse kann man mit einem der drei Zuweisungsoperatoren als Variablen speichern. Die folgenden drei Anweisungen haben denselben Effekt:
+
+```{r}
+a <- 5
+5 -> a
+a = 5
+```
+
+Jetzt können wir mit `a` rechnen als ob es eine Zahl wäre:
+
+```{r}
+a + 10
+a * a
+```
+
+Variablennamen dürfen in R so ziemlich alles enthalten was wir uns vorstellen können, aber wenn zu bunt wird, müssen wir sie in "backticks" einschließen:
+
+```{r}
+langer_name <- 5
+langer.name <- 5
+geht.auch.mit.ümläuten <- 5
+`variable mit leerzeichen` <- 5
+```
+
+Was nicht unbedingt immer praktisch ist, aber es funktioniert.
+
+So kann man sogar Variablen in Zahlen speichern, was manchmal passiert wenn man Tabellen einliest, in denen Jahreszahlen in der Kopfzeile stehen:
+
+```{r}
+`2000` <- 5
+`2000` * `2000`
+```
+
+
+## Vektoren
+
+Mit der Funktion `c()` kann man mehrere Zahlen zu einem Vektor zusammenfassen.
+
+```{r}
+b <- c(7, 2, 11, 4.5, 3)
+```
+
+Mit den eckigen Klammern können wir auf Elemente im Vektor zugreifen, wobei `1` das erste Element ist:
+
+```{r}
+b[1]
+```
+
+Mit Vektoren können wir genauso rechnen wie mit einzelnen Zahlen:
+
+```{r}
+b + 10
+b * b
+```
+
+Mit `sort()` kann man Vektoren sortieren:
+
+```{r}
+sort(b)
+```
+
+mit `min()`/`max()` kann man sich den kleinsten und größten Wert anzeigen lassen:
+
+```{r}
+min(b)
+max(b)
+```
+
+Mit `range()` bekommt man beides gleichzeitig:
+
+```{r}
+range(b)
+```
+
+Mit `length()` bekommen wir die Anzahl der Elemente:
+
+```{r}
+length(b)
+```
+
+Mit `sum()` bekommen wir die Summe der Elemente:
+
+```{r}
+sum(b)
+```
+
+Und wenn man Summe durch Anzahl teilt erhält man den Mittelwert:
+
+```{r}
+sum(b) / length(b)
+```
+
+Einfacher geht es mit `mean()`:
+
+```{r}
+mean(b)
+```
+
+Der Mittelwert ist bekanntlich ja nicht das gleiche wie der `median()`:
+
+```{r}
+median(b)
+```
+
+Eine Übersicht bekommt man mit `summary()`. 
+```{r}
+summary(b)
+```
+
+
+
+## Character
+
+R kann natürlich nicht nur Zahlen sondern auch Text. Diese kann man entweder mit einfachen oder doppelten Anführungszeichen einschließen:
+
+```{r}
+a <- "R ist eine nützliche Sache"
+```
+
+Mehrere "character" Objekte lassen sich wie gewohnt als Vektoren zusammenfassen:
+
+```{r}
+b <- c("Birne", "Banane", "Apfel", "Zitrone", "Banane", "Birne")
+```
+
+Mit `table()` kann ich schnell durchzählen wie oft jedes Wort vorkommt:
+
+```{r}
+table(b)
+```
+
+Jetzt wissen wir schon genug um uns mit Tabellen in R zu beschäftigen.
+
+## Tabellen in R
+
+Tabellarische Datensätze werden in R üblicherweise als "data frame" gespeichert. Man kann es sich vorstellen wie eine Sammlung von benannten Spalten-Vektoren die alle die gleiche Länge haben.
+
+Es gibt eine Reihe von eingebauten Datensätzen zum Ausprobieren, wie z.B. `cars`
+
+```{r}
+cars
+```
+
+Auf die Spalten-Vektoren können wir mit der `$` Notation zugreifen:
+
+```{r}
+cars$speed
+```
+
+und damit genauso rechnen wie mit anderen Vektoren auch:
+
+```{r}
+summary(cars$speed)
+```
+
+Mit `plot()` kann man nun einfache Visualisierungen von Tabellen erstellen:
+
+```{r}
+plot(cars$speed, cars$dist)
+```
+
+Oder man erstellt ein Balkendiagramm:
+
+```{r}
+barplot(cars$speed)
+```
+
+Oder ein Liniendiagramm:
+
+```{r}
+plot(cars$speed, cars$dist, type='l')
+```
+
