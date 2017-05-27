@@ -3,18 +3,12 @@ Statistische Daten und Wahlergebnisse als Bar-Codes visualisieren
 
 In diesem Workshop geht es darum, Datensätze in RStudio zu analysieren und visualisieren. Genauergesagt werden wir uns Wahlergebnisse vergangener Bundestagswahlen anschauen, mit Strukturdaten der Wahlkreise kombinieren und als kompakte Strichcode-Diagramme darstellen.
 
-Sämtliche Befehle, die wir in diesem Workshop ausführen werden, sind bereits in diesem Dokument gesammelt.
+Sämtliche Befehle, die wir in diesem Workshop ausführen werden, sind in diesem sogenannten "R Notebook" gesammelt.
 
-### RStudio
+Daten laden
+-----------
 
-### Pipes
-
-``` r
-needs(readr, dplyr, ggplot2, gridExtra)
-theme_set(theme_light())
-```
-
-Wahlergebnisse laden:
+Zunächst werden wir die (zuvor bereinigten) Wahlergebnisse laden. Dazu benutzen wir die `read_tsv` Funktion vom `readr` Paket. readr Funktionen versuchen automatisch die Spaltentypen zu erraten, aber wir machen es dem Programm etwas einfacher indem wir die korrekten Spaltentypen angeben. `cols(Wahlkreis='c', .default = 'i')` heißt dabei nichts anderes das die Spalte "Wahlkreis" Text enthählt (`c` für *character vector*), während die übrigen Spalten Ganzzahlen (`i` für *integer*).
 
 ``` r
 btw <- read_tsv('data/cleaned/btw13_kerg.csv',
