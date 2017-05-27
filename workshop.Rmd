@@ -1,8 +1,8 @@
 ---
-  title: "Statistische Daten und Wahlergebnisse als Bar-Codes visualisieren"
-  output: html_notebook
-  #  - github_document
-  
+title: "Statistische Daten und Wahlergebnisse als Bar-Codes visualisieren"
+output:
+  html_document: default
+  html_notebook: default
 ---
   
 In diesem Workshop geht es darum, Datensätze in RStudio zu analysieren und visualisieren. Genauergesagt werden wir uns Wahlergebnisse vergangener Bundestagswahlen anschauen, mit Strukturdaten der Wahlkreise kombinieren und als kompakte Strichcode-Diagramme darstellen.
@@ -264,7 +264,7 @@ ggsave("plots.pdf", plots, width=21, height=27.9, units='cm')
 Histogramm: Problem dabei ist, wieviele Bins ich wählen soll
 
 ```{r, fig.height=4, fig.width=8}
-strukt %>% 
+btw_final %>% 
   #  filter(landslide) %>% 
   select(sieger, gruppe, value=Bevölkerungsdichte) %>% 
   ggplot(aes(value, fill=gruppe)) +
@@ -278,7 +278,7 @@ strukt %>%
 Eine clevere Alternative zu Histogrammen sind Density-Plots:
   
 ```{r, fig.height=4, fig.width=8}
-strukt %>% 
+btw_final %>% 
   #  filter(landslide) %>% 
   select(sieger, gruppe, value=Bevölkerungsdichte) %>% 
   ggplot(aes(value, fill=gruppe)) +
@@ -291,33 +291,4 @@ strukt %>%
 
 
 
-oder visualisieren, z.b. als Histogram:
-  
-```{r}
-btw_margin %>%
-  ggplot(aes(margin)) +
-  geom_histogram(binwidth = 5)
-```
-
-```{r}
-btw_margin %>%
-  ggplot(aes(margin)) +
-  facet_grid(gruppe ~ .) +
-  geom_histogram(binwidth = 1)
-```
-
-
-```{r}
-btw_margin %>%
-  ggplot(aes(margin)) +
-  facet_grid(gruppe ~ .) +
-  geom_density(bw=1)
-```
-
-```{r}
-btw_margin %>%
-  ggplot(aes(gruppe, margin)) +
-  geom_boxplot() + 
-  coord_flip()
-```
 
