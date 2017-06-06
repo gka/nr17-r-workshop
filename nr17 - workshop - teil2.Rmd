@@ -25,8 +25,10 @@ theme_set(theme_minimal())
 
 ```{r}
 
-plt <- btw %>% ggplot(aes(Alter.unter18, color=winner))
-plt + geom_density(bw=0.3) + facet_grid(gruppe ~ .)
+btw %>%
+    ggplot(aes(Alter.unter18, fill=gruppe)) +
+    geom_histogram() +
+    facet_grid(gruppe ~ .)
 
 
 #  scale_colour_manual(values = colors)
