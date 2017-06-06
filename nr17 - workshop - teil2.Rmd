@@ -1,0 +1,158 @@
+---
+title: "Workshop: Statistische Daten und Wahlergebnisse als Bar-Codes visualisieren"
+output:
+  html_document: default
+---
+
+```{r}
+needs(readr, dplyr, ggplot2)
+```
+
+
+## Daten einlesen
+  
+```{r}
+btw <- read_csv('btw-final.csv') %>% 
+  mutate(gruppe=factor(gruppe, c('L_SG', 'C_SG', 'C_RRG', 'L_RRG')))
+```
+
+## Visualisieren mit ggplot2
+
+```{r}
+theme_set(theme_minimal())
+```
+
+
+```{r}
+
+plt <- btw %>% ggplot(aes(Alter.unter18, color=winner))
+plt + geom_density(bw=0.3) + facet_grid(gruppe ~ .)
+
+
+#  scale_colour_manual(values = colors)
+#   geom_smooth(method = "loess", color='black') +
+#   geom_point(aes(y=Wanderungssaldo), shape=3, color='red') +
+#   geom_smooth(aes(y=Wanderungssaldo), method = "loess", color='red')
+# 
+# ggsave('plot.pdf')
+# colors <- c(L_SG='#333333', C_SG='#777777', L_RRG='#cc0000', C_RRG='#dd7777')
+
+```
+
+
+```{r}
+plot_data <- btw %>%
+  select(landslide, gruppe, wert=Mit.Hochschulreife)
+
+plot_data %>% 
+  ggplot(aes(x=wert, y=gruppe, color=gruppe)) +
+  geom_point()
+```
+
+Mit `scale_colour_manual` können wir unsere eigenen Farben auswählen:
+
+```{r}
+colors <- c(L_SG='#333333', C_SG='#777777', L_RRG='#cc0000', C_RRG='#dd7777')
+
+plot_data %>% 
+  ggplot(aes(x=wert, y=gruppe, color=gruppe)) +
+  geom_point() +
+  scale_colour_manual(values = colors)
+```
+
+
+### Bar-Codes
+
+Statt `geom_point` benutzen wir nun `geom_vline`.
+
+```{r, fig.height=2, fig.width=8}
+plot_data %>% 
+  ggplot() +
+  geom_vline(aes(xintercept=wert, color=gruppe), size=1, alpha=0.5) +
+  scale_colour_manual(values = colors, guide=F) +
+  scale_x_log10()
+```
+
+Mit `facet_grid` kann man aus jedem Plot ganz einfach Small multiples machen:
+
+```{r, fig.height=3, fig.width=8}
+plot_data %>% 
+  ggplot() +
+  geom_vline(aes(xintercept=wert, color=gruppe), size=1, alpha=0.5) +
+  scale_colour_manual(values = colors, guide=F) +
+  facet_grid(gruppe ~ .)
+```
+
+
+Nur "landslide" Wahlkreise:
+
+```{r, fig.height=2, fig.width=8}
+plot_data %>% 
+  filter(landslide) %>% 
+  ggplot(aes(wert)) +
+  facet_grid(gruppe ~ .) +
+  geom_vline(aes(xintercept=wert, color=gruppe), size=1, alpha=0.5) +
+  scale_colour_manual(values = colors, guide=F)
+```
+
+Mittelwerte hinzufügen:
+
+```{r, fig.height=2, fig.width=8}
+mittel <- plot_data %>% 
+  group_by(gruppe) %>% 
+  summarize(avg=mean(wert), med=median(wert))
+
+plot_data2 <- left_join(plot_data, mittel, 'gruppe')
+
+plot_data2 %>% 
+  filter(landslide) %>% 
+  ggplot() +
+  facet_grid(gruppe ~ .) +
+  geom_vline(aes(xintercept=wert, color=gruppe), size=1, alpha=0.35) +
+  geom_vline(aes(xintercept=avg), color='black', size=1, alpha=1) +
+  scale_colour_manual(values = colors, guide=F)
+```
+
+das ganze können wir in einer funktion speichern:
+
+```{r, fig.height=3, fig.width=8}
+plot_bars <- function(spalte) {
+  
+  plot_data <- btw %>% 
+    filter(landslide) %>% 
+    select_('winner', 'gruppe', wert=as.name(spalte)) %>% 
+    mutate(wert=wert)
+
+  mittel <- plot_data %>% 
+    group_by(gruppe) %>% 
+    summarize(avg=mean(wert), med=median(wert))
+  
+  plot <- plot_data %>% 
+    left_join(mittel, 'gruppe') %>% 
+    ggplot(aes(wert)) +
+    facet_grid(gruppe ~ .) +
+    geom_vline(aes(xintercept=wert + rnorm(nrow(plot_data), sd = 0.1), color=gruppe), size=1, alpha=0.25) +
+    geom_vline(aes(xintercept=avg), color='white', size=5, alpha=0.7) +
+    geom_vline(aes(xintercept=avg), color='black', size=1, alpha=1) +
+    scale_colour_manual(values = colors, guide=F) +
+    ggtitle(spalte) + xlab('')
+    theme(plot.margin = rep(unit(0.5,'cm'),4))
+  
+  plot
+}
+```
+
+
+```{r, fig.height=2, fig.width=8}
+plot_bars('Mit.Hochschulreife') + scale_x_log10(breaks=seq(0,100,10))
+```
+
+und lassen die funktion automatisch über alle Spalten in unserem Datensatz laufen. Das Ergebnis speichern wir als PDF Datei mit je 7 Plots pro Seite:
+
+```{r}
+needs(gridExtra)
+
+plots <- lapply(colnames(btw)[17:54], plot_bars)
+plots <- marrangeGrob(plots, nrow=7, ncol=1)
+ggsave("plots.pdf", plots, width=21, height=27.9, units='cm')
+```
