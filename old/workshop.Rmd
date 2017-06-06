@@ -1,0 +1,305 @@
+---
+title: "Statistische Daten und Wahlergebnisse als Bar-Codes visualisieren"
+output:
+  html_document: default
+  html_notebook: default
+---
+  
+In diesem Workshop geht es darum, Datensätze in RStudio zu analysieren
+und visualisieren. Genauergesagt werden wir uns Wahlergebnisse
+vergangener Bundestagswahlen anschauen, mit Strukturdaten der
+Wahlkreise kombinieren und als kompakte Strichcode-Diagramme
+darstellen.
+
+Sämtliche Befehle, die wir in diesem Workshop ausführen werden, sind
+in diesem sogenannten "R Notebook" gesammelt.
+
+  
+```{r, echo=FALSE}
+needs(readr, dplyr, ggplot2, gridExtra)
+theme_set(theme_minimal())
+```
+
+## 1. Daten laden
+
+Zunächst werden wir die (zuvor bereinigten) Wahlergebnisse laden. Dazu benutzen wir die `read_tsv` Funktion vom `readr` Paket. Wir speichern das Ergebnis in der Variable `btw`.
+
+```{r}
+btw <- read_tsv('data/cleaned/btw13_kerg.csv')
+```
+
+### Extra: Spaltentypen genau festlegen
+
+Die `read_*` Funktionen versuchen automatisch die Spaltentypen zu erraten. In diesem Fall hat das nicht geklappt, die Spalten mit der Anzahl der Stimmen pro Partei wurden als `col_character`, also Textspalten, erkannt.
+
+Wir können es dem Programm einfacher machen, in dem wir die Spaltentypen angeben. `cols(Wahlkreis='c', .default = 'n')` heißt dabei nichts anderes das die Spalte "Wahlkreis" Text enthählt, während die übrigen Spalten aus Zahlen bestehen.
+
+
+```{r}
+btw <- read_tsv('data/cleaned/btw13_kerg.csv',
+                col_types=cols(Wahlkreis='c', .default = 'n'))
+```
+
+
+## 2. Stimmen der beiden politischen Blöcke berechnen
+
+```{r, echo=FALSE}
+needs(dplyr)
+```
+
+Aus den Zweitstimmen der großen Parteien berechnen wir nun die Gesamtstimmen zweier Blöcke: SPD + LINKE + GRÜNE (RRG) sowie Schwarz-Gelb (SG)
+
+Gesamtstimmen der Koalitionen Rot-Rot-Grün (RRG) und CDU/CSU+FDP (SG) berechnen:
+  
+```{r}
+btw %>%
+  mutate(RRG=SPD.Zweitstimmen + GRÜNE.Zweitstimmen + `DIE LINKE.Zweitstimmen`,
+         SG=CDU.Zweitstimmen + CSU.Zweitstimmen + FDP.Zweitstimmen) %>% 
+  select(Nr, Wahlkreis, RRG, SG)
+```
+
+Schauen wir uns das Ergebnis an fällt auf das wir immer nur `NA` bei Schwarz-Gelb erhalten. Woran liegt das?
+
+```{r}
+btw %>%
+  select(Nr, CDU=CDU.Zweitstimmen, CSU=CSU.Zweitstimmen, FDP=FDP.Zweitstimmen)
+```
+
+Die `coalesce` Funktion macht genau das, was wir brauchen: finde den ersten nicht NA Wert.
+
+```{r}
+btw_koal <- btw %>%
+  mutate(RRG=SPD.Zweitstimmen + GRÜNE.Zweitstimmen + `DIE LINKE.Zweitstimmen`,
+         SG=coalesce(CDU.Zweitstimmen, CSU.Zweitstimmen) + FDP.Zweitstimmen) %>% 
+  select(Nr, RRG, SG)
+```
+
+
+# 3. Prozentuale Stimmendifferenz zwischen den beiden Blöcken berechnen:
+  
+1. margin = `100 * (SG - RRG)/(SG + RRG)`
+2. sieger
+3. landslide, wenn margin 10 Prozent oder mehr
+4. klasse
+
+```{r}
+btw_margin <- btw_koal %>% 
+  mutate(sieger=ifelse(SG > RRG, 'SG', 'RRG')) %>% 
+  mutate(margin=round(100 * (SG - RRG)/(SG + RRG), 2)) %>% 
+  mutate(landslide=abs(margin) >= 10) %>% 
+  mutate(gruppe=paste0(ifelse(landslide,'L_','C_'), sieger)) %>% 
+  mutate(gruppe=factor(gruppe, c('L_SG', 'C_SG', 'C_RRG', 'L_RRG')))
+```
+
+erstmal ein bisschen ansehen:
+  
+```{r}
+table(btw_margin$gruppe)
+```
+
+interessanterweise werden es immer weniger als mehr, anders als in den USA!
+  
+* 2005: 192
+* 2009: 188
+* 2013: 178
+
+## 4. Mit Strukturdaten kombinieren
+
+Strukturdaten dazuladen und per left_join verbinden:
+  
+```{r}
+btw_final <- read_tsv('data/cleaned/btw13_strukturdaten.csv', na = '–',
+                   col_types = cols(Wahlkreis='c', .default = 'n')) %>% 
+  filter(Nr < 500) %>% 
+  left_join(btw_margin, by ='Nr')
+```
+
+## 4. Visualisierung
+
+```{r}
+plot_data <- btw_final %>%
+  select(sieger, landslide, gruppe, wert=Bevölkerungsdichte)
+
+plot_data %>% 
+  ggplot(aes(x=wert, y=gruppe, color=gruppe)) +
+  geom_point()
+```
+
+
+```{r}
+colors <- c(L_SG='#333333', C_SG='#777777', L_RRG='#cc0000', C_RRG='#dd7777')
+
+plot_data %>% 
+  ggplot(aes(x=wert, y=gruppe, color=gruppe)) +
+  geom_point() +
+  scale_colour_manual(values = colors)
+```
+
+```{r}
+colors <- c(L_SG='#333333', C_SG='#777777', L_RRG='#cc0000', C_RRG='#dd7777')
+
+plot_data %>% 
+  ggplot(aes(x=wert, y=gruppe, color=gruppe)) +
+  geom_point() +
+  scale_colour_manual(values = colors) +
+  scale_x_log10()
+```
+
+Aufgabe: + log-scale hinzufügen ^^
+  
+  Bevölkerungsdichte nach Gruppen (logscale):
+
+
+
+```{r}
+plot_data %>% 
+  ggplot(aes(x=wert, y=gruppe, color=gruppe)) +
+  scale_colour_manual(values = colors) +
+  geom_point() +
+  scale_x_log10()
+```
+
+
+### Bar-Codes
+
+```{r, fig.height=2, fig.width=8}
+plot_data %>% 
+  ggplot() +
+  geom_vline(aes(xintercept=wert, color=gruppe), size=1.5, alpha=0.35) +
+  scale_colour_manual(values = colors, guide=F) +
+  scale_x_log10()
+```
+
+```{r, fig.height=3, fig.width=8}
+plot_data %>% 
+  ggplot() +
+  geom_vline(aes(xintercept=wert, color=gruppe), size=1.5, alpha=0.35) +
+  scale_colour_manual(values = colors, guide=F) +
+  scale_x_log10() +
+  facet_grid(gruppe ~ .)
+
+# introduction: facet_grid
+#  gruppe ~ .    . ~ gruppe    landslide ~ sieger
+```
+
+```{r, fig.height=3, fig.width=8}
+plot_data %>% 
+  ggplot(aes(wert)) +
+  geom_vline(aes(xintercept=wert, color=gruppe), size=1.5, alpha=0.35) +
+  scale_colour_manual(values = colors, guide=F) +
+  scale_x_log10() +
+  facet_grid(gruppe ~ .)
+```
+
+Nur "landslide" Wahlkreise:
+
+```{r, fig.height=2, fig.width=8}
+plot_data %>% 
+  filter(landslide) %>% 
+  ggplot(aes(wert)) +
+  facet_grid(gruppe ~ .) +
+  geom_vline(aes(xintercept=wert, color=gruppe), size=1.5, alpha=0.35) +
+  scale_colour_manual(values = colors, guide=F) +
+  scale_x_log10()
+```
+
+Mittelwerte hinzufügen:
+
+```{r, fig.height=2, fig.width=8}
+mittel <- plot_data %>% 
+  group_by(gruppe) %>% 
+  summarize(avg=mean(wert), med=median(wert))
+
+plot_data2 <- left_join(plot_data, mittel, 'gruppe')
+
+plot_data2 %>% 
+  filter(landslide) %>% 
+  ggplot() +
+  facet_grid(gruppe ~ .) +
+  geom_vline(aes(xintercept=wert, color=gruppe), size=1.5, alpha=0.25) +
+  geom_vline(aes(xintercept=avg), color='black', size=2, alpha=1) +
+  scale_colour_manual(values = colors, guide=F) +
+  scale_x_log10()
+```
+
+das ganze können wir in einer funktion speichern:
+
+```{r, fig.height=3, fig.width=8}
+plot_bars <- function(spalte, log=FALSE) {
+  
+  plot_data <- btw_final %>% 
+    filter(landslide) %>% 
+    select_('sieger', 'gruppe', wert=as.name(spalte)) %>% 
+    mutate(wert=wert)
+
+  mittel <- plot_data %>% 
+    group_by(gruppe) %>% 
+    summarize(avg=mean(wert), med=median(wert))
+  
+  plot <- plot_data %>% 
+    left_join(mittel, 'gruppe') %>% 
+    ggplot(aes(wert)) +
+    facet_grid(gruppe ~ .) +
+    geom_vline(aes(xintercept=wert + rnorm(nrow(plot_data), sd = 0.1), color=gruppe), size=1.5, alpha=0.25) +
+    geom_vline(aes(xintercept=avg), color='white', size=5, alpha=0.7) +
+    geom_vline(aes(xintercept=avg), color='black', size=1, alpha=1) +
+    scale_colour_manual(values = colors, guide=F) +
+    ggtitle(spalte) +
+    theme(plot.margin = rep(unit(0.5,'cm'),4))
+  
+  if (log) plot <- plot + scale_x_log10()
+  plot
+}
+```
+
+
+```{r, fig.height=2, fig.width=8}
+# plot_bars('Bevölkerungsdichte', log=TRUE)
+plot_bars('Alter.35-60')
+```
+
+und lassen die funktion automatisch über alle Spalten in unserem Datensatz laufen. Das Ergebnis speichern wir als PDF Datei mit je 7 Plots pro Seite:
+
+```{r}
+needs(gridExtra)
+
+plots <-lapply(colnames(btw_final)[3:41], plot_bars)
+plots <- marrangeGrob(plots, nrow=7, ncol=1)
+ggsave("plots.pdf", plots, width=21, height=27.9, units='cm')
+
+```
+
+
+## Alternative Visualisierungen
+
+Histogramm: Problem dabei ist, wieviele Bins ich wählen soll
+
+```{r, fig.height=4, fig.width=8}
+btw_final %>% 
+  #  filter(landslide) %>% 
+  select(sieger, gruppe, value=Bevölkerungsdichte) %>% 
+  ggplot(aes(value, fill=gruppe)) +
+  facet_grid(gruppe ~ .) +
+  geom_histogram(bins=50, alpha=0.6) +
+  scale_fill_manual(values = colors, guide=F) +
+  scale_x_log10() +
+  theme_minimal()
+```
+
+Eine clevere Alternative zu Histogrammen sind Density-Plots:
+  
+```{r, fig.height=4, fig.width=8}
+btw_final %>% 
+  #  filter(landslide) %>% 
+  select(sieger, gruppe, value=Bevölkerungsdichte) %>% 
+  ggplot(aes(value, fill=gruppe)) +
+  facet_grid(gruppe ~ .) +
+  geom_density(bw=.05, alpha=0.6, color=F) +
+  scale_fill_manual(values = colors, guide=F) +
+  scale_x_log10() +
+  theme_minimal()
+```
+
+
+
+

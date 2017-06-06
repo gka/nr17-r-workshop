@@ -1,0 +1,397 @@
+---
+title: "Wie polarisiert ist Deutschland?"
+output: html_notebook
+---
+
+Liste von verwendeten Funktionen:
+
+* `needs`
+* `read_tsv`
+* `gather`
+* `filter`
+* `mutate`
+* `group_by`
+* `summarise`
+* `arrange`
+
+### Vorbereitung
+
+Wir benutzen das Paket `needs` zum laden von Programmbibliotheken die wir in diesem Tutorial brauchen. Zur Datenanalyse benötigen wir die Pakete `readr`, `dplyr`, `tidyr` und `stringr`. Zum Visualisieren werden wir `ggplot2` benutzen.
+
+```{r, eval=FALSE}
+#install.packages('needs')
+#library(needs)
+needs(dplyr, readr, ggplot2, stringr, tidyr)
+```
+
+### Wahlergebnisse einlesen und aufbereiten
+
+```{r, results='hide', message=F}
+btw13 <- read_tsv('data/cleaned/btw13_kerg.csv',
+                     col_types=cols(Wahlkreis='c', .default = 'i'))
+```
+
+Über den Environment-Bereich können wir uns anschauen was wir bisher für Daten geladen haben.
+
+Nun werden die Daten in einer Reihe von Schritten transformiert. Diese Schritte sind einer Art Pipeline angeordnet, bei der das Ergebnis einer Operation mit dem etwas umständlichen Operator `%>%` in die folgende Operation geleitet wird.
+
+Die Befehle der Reihe nach:
+
+1. `gather` transformiert den Datensatz vom "breiten" in das "lange" Tabellenformat. Wir bewahren die Spalten `Nr`, `Wahlkreis` und `Land` und breiten den Rest in viele Zeilen aus.
+2. Jetzt benutzen wir `filter` um alle Zeilen zu entfernen, in denen entweder das Wort "Zweitstimmen" in der Spalte `partei` nicht (`!`) enthalten ist oder (`|`) der Wert in der Spalte `stimmen` keine Zahl ist.
+3. Abschließend benutzen wir `mutate` um den Text ".Zweitstimmen" aus der Spalte `partei` zu entfernen.
+
+Das Ergebnis wird in der Variable `btw.zweitstimmen` gespeichert.
+
+```{r}
+btw <- btw13 %>% 
+  gather(partei, stimmen, -Nr, -Wahlkreis, -Land) %>% 
+  filter(!(is.na(str_match(partei, "Zweitstimmen")) | is.na(stimmen))) %>%
+  mutate(partei=str_replace(partei, '.Zweitstimmen', ''))
+```
+
+Jetzt haben wir unseren Datensatz in einem Format mit dem wir gut rechnen können. Oben rechts erscheint jetzt die neu angelegte Variable `btw`. Statt 299 Zeilen haben wir nun 5716 Zeilen, je eine Zeile pro Landkreis und Partei.
+
+Zunächst schauen wir uns an ob unsere Daten mit den vom Bundeswahlleiter veröffentlichten Ergebnissen übereinstimmen, in dem wir die Stimmen aller Parteien zusammenrechnen. 
+
+Dazu benutzen wir wieder eine Pipeline:
+
+1. Mit `group_by` gruppieren wir alle Zeilen nach der Spalte `partei`.
+2. Dann benuzten wir `summarise` um für jede Gruppe die Summe aller Stimmen auszurechnen.
+3. Schließlich sortieren wir das Ergebnis mit `arrange` nach absteigender Stimmenzahl.
+
+```{r}
+btw %>%
+  group_by(partei) %>% 
+  summarise(stimmen=sum(stimmen)) %>% 
+  arrange(-stimmen)
+```
+
+Und das Ergebnis stimmt mit den [Daten vom Bundeswahlleiter](https://www.bundeswahlleiter.de/bundestagswahlen/2013/ergebnisse/bund-99.html) überein: 
+
+# Stärkste und zweitstärkste Partei je Wahlkreis berechnen
+
+```{r}
+btw_sieger <- btw %>% 
+  filter(partei != 'Gültige' & partei != 'Ungültige') %>% 
+  group_by(Nr) %>% 
+  arrange(-stimmen) %>% 
+  mutate(r=row_number()) %>% 
+  filter(r==1) %>% 
+  ungroup() %>% 
+  select(wahlkreis=Nr, partei.sieger=partei, stimmen.sieger=stimmen) %>% 
+  arrange(wahlkreis)
+```
+
+Mit `table` können wir schnell nachschauen welche Partei wieviele Wahlkreise gewonnen hat:
+
+```{r}
+table(btw_sieger$partei.sieger)
+```
+
+Nun machen wir das gleiche für die zweitstärkste Partei:
+
+```{r}
+btw_zweiter <- btw %>% 
+  filter(partei != 'Gültige' & partei != 'Ungültige') %>% 
+  group_by(Nr) %>% 
+  arrange(-stimmen) %>% 
+  mutate(r=row_number()) %>% 
+  filter(r==2) %>%  # <-- einzige veränderung!
+  ungroup() %>% 
+  select(wahlkreis=Nr, partei.zweiter=partei, stimmen.zweiter=stimmen) %>% 
+  arrange(wahlkreis)
+```
+
+Um die Wahlkreise miteinander vergleichen zu können brauchen wir die Anzahl der gültigen Zweitstimmen:
+
+```{r}
+btw_gültig <- btw %>% 
+  filter(partei == "Gültige") %>% 
+  select(wahlkreis=Nr, gültig=stimmen) 
+```
+
+Jetzt können wir alles zusammen packen:
+
+```{r}
+btw_margin <- btw_gültig %>% 
+  left_join(btw_sieger, 'wahlkreis') %>% 
+  left_join(btw_zweiter, 'wahlkreis') %>% 
+  mutate(prozent.sieger=100*stimmen.sieger/gültig) %>% 
+  mutate(prozent.zweiter=100*stimmen.zweiter/gültig) %>% 
+  mutate(abstand=prozent.sieger - prozent.zweiter) %>% 
+  mutate(landslide=abstand >= 10)
+```
+
+Jetzt schauen wir uns an welche Parteien wie viele Wahlkreise mit erdrutschartigen Vorsprung gewonnen haben:
+
+```{r}
+table(btw_margin$landslide, btw_margin$partei.sieger)
+```
+
+### Zweiter Anlauf:
+
+```{r}
+btw_koalitionen <- btw13 %>%
+  mutate(RRG=SPD.Zweitstimmen + `DIE LINKE.Zweitstimmen` + GRÜNE.Zweitstimmen,
+         CCF=coalesce(CDU.Zweitstimmen, CSU.Zweitstimmen) + FDP.Zweitstimmen) %>% 
+  select(Nr, Wahlkreis, Land, RRG, CCF)
+```
+
+```{r}
+btw_koalitionen %>% 
+  mutate(margin=round(100 * (CCF - RRG)/(CCF + RRG), 2))
+```
+
+
+
+~~~~~~~~~~~~~~~~~~~~
+
+
+
+### Daten aufbereiten
+
+Wir laden nun die Ergebnisse der letzten Bundestagswahl. Diese kommen vom Bundeswahlleiter und wurden von mir mit Hilfe eines weiteren [Scriptes](#todo) bereinigt.
+
+Mit Hilfe des Pfeil-Operators `->` speichern wir die geladenen Daten in der Variable `btw`. Die Funktion `read_tsv` versucht automatisch zu erkennen, welche Datentypen sich in welchen Spalten befinden und zeigt uns einen Teil der erkannten Spalten an.
+
+```{r, message=F, render=F, warning=F, highlight=T}
+read_tsv('data/cleaned/btw13_kerg.csv') -> btw
+```
+
+Die Daten befinden sich derzeit im sogenannten "weiten" Format, d.h. das in den Tabellenzeilen mehr als ein Datenpunkt befindet — in diesem Fall die Ergebnisse der unterschiedlichen Parteien in diesem Wahlkreis.
+
+Mit dem Pfeil oben rechts in der Tabelle kannst du weitere Spalten einblenden.
+
+```{r, echo=F}
+btw
+```
+
+Oft sind Daten einfacher zu bearbeiten wenn wir sie in das "lange" Tabellenformat umwandeln, also maximal ein Datenpunkt pro Zeile. Dazu nehmen wir die `gather` Funktion vom `tidyr` package.
+
+Neben dem oben verwendeten Pfeil-Operator (`->`) gibt es in R noch einen weiteren, den Pipe-Operator `%>%`. Mit ihm lässt sich das Ergebnis einer Funktion als das erste Argument der folgenden Funktion "pipen". (Tipp: Der Pipe-Operator lässt sich durch drücken von CTRL+SHIFT+M erzeugen).
+
+```{r}
+btw %>% gather(column, value, -Land, -Nr, -Wahlkreis)
+```
+
+Die Spalte `value` wurde als "chr", also character, erkannt. Wir wandeln sie in den Typ `numeric` für Zahlen um:
+
+```{r}
+btw %>% 
+  gather(column, value, -Land, -Nr, -Wahlkreis) %>% 
+  mutate(value=as.numeric(value))
+```
+
+Für unsere Analyse brauchen wir nur die Zweitstimmen, also werfen wir alle Zeilen raus die nicht das Wort "Zweitstimmen" enthalten. Diesen Datensatz speichern wir dann als `btw13.zweit`
+
+```{r}
+btw %>% 
+  gather(column, value, -Land, -Nr, -Wahlkreis) %>% 
+  mutate(value=as.numeric(value)) %>% 
+  filter(!is.na(str_match(column, "Zweitstimmen"))) %>%
+  filter(!is.na(value)) %>%
+  mutate(column=str_replace(column, '.Zweitstimmen', '')) ->
+  btw.zweitstimmen
+
+btw.zweitstimmen
+```
+
+```{r}
+btw.zweitstimmen %>% 
+  filter(column != 'Gültige' & column != 'Ungültige') %>% 
+  group_by(Nr) %>% 
+  arrange(-value) %>% 
+  mutate(r=row_number()) %>% 
+  filter(r==1) %>% 
+  ungroup() %>% 
+  select(Nr, partei.sieger=column, stimmen.sieger=value) %>% 
+  arrange(Nr) ->
+  btw.sieger
+
+btw.sieger
+```
+
+An dieser Stelle können wir testen ob die Daten korrekt sind in dem wir ausrechnen wie viele Wahlkreise jede Partei gewonnen hat:
+
+```{r}
+table(btw.sieger$partei.sieger)
+```
+
+Um den Vorsprung zur Partei mit den zweitmeisten Stimmen zu berechnen müssen wir erst mal herausfinden welche Partei.
+
+```{r}
+btw.zweitstimmen %>% 
+  filter(column != 'Gültige' & column != 'Ungültige') %>% 
+  group_by(Nr) %>% 
+  arrange(-value) %>% 
+  mutate(r=row_number()) %>% 
+  filter(r==2) %>%  # <-- row == 2
+  ungroup() %>% 
+  select(Nr, partei.zweiter=column, stimmen.zweiter=value) %>% 
+  arrange(Nr) ->
+  btw.zweiter
+
+btw.zweiter
+```
+
+
+
+```{r}
+btw.zweitstimmen %>% 
+  filter(column == "Gültige") %>% 
+  select(Nr, gültig=value) ->
+  btw.gültig
+
+btw.gültig
+```
+
+Damit mit den drei Spalten rechnen können müssen wir sie mit `left_join` zu einem Datensatz vereinen. 
+
+```{r}
+btw.gültig %>% 
+  left_join(btw.sieger, 'Nr') %>% 
+  left_join(btw.zweiter, 'Nr')
+```
+
+Jetzt können wir den prozentualen Vorsprung der Siegerpartei berechnen:
+
+```{r}
+btw.gültig %>% 
+  left_join(btw.sieger, 'Nr') %>% 
+  left_join(btw.zweiter, 'Nr') %>% 
+  mutate(abstand=(stimmen.sieger - stimmen.zweiter)/gültig) %>% 
+  select(Nr, abstand, everything())
+```
+
+Nun denken wir uns eine willkürliche Grenze aus, ab der wir einen Wahlkreissieg als "landslide" bezeichnen, z.B. 15%:
+
+```{r}
+btw.gültig %>% 
+  left_join(btw.sieger, 'Nr') %>% 
+  left_join(btw.zweiter, 'Nr') %>% 
+  mutate(abstand=(stimmen.sieger - stimmen.zweiter)/gültig) %>% 
+  mutate(landslide= abstand >= 0.15) %>% 
+  select(Nr, abstand, landslide, everything()) ->
+  btw.landslide
+
+btw.landslide
+```
+
+Jetzt schauen wir uns an welche Parteien wie viele Wahlkreise mit erdrutschartigen Vorsprung gewonnen haben:
+
+```{r}
+table(btw.landslide$landslide, btw.landslide$partei.sieger)
+```
+
+SPD hat nur 3 Erdrutschsiege, die CDU 104, CSU 40. Macht Sinn, aber hatte die CDU tatsächlich so einen großen Vorsprung? Zweiparteienabstand.
+
+Auch hier sieht das Verhältnis sehr zu lasten. Im Gegensatz zur USA ist Deutschland ein Vielparteiensystem. Für unsere Analyse sind die Koalitionen relevanter als die Ergebnisse der einzelnen Parteien. Wie sähe die Sache aus wenn wir CDU/CSU der Koalition aus SPD, GRÜNE und DIE LINKE entgegensetzen?
+
+Dazu müssen wir den Datensatz verändern. Zunächst transformieren wir den Datensatz wieder in das "breite" Format mit `spread`, der Gegenoperation zu `gather`.
+
+```{r}
+btw.zweitstimmen %>% 
+  select(Nr, column, value) %>% 
+  spread(column, value)
+```
+
+Jetzt können wir die Parteien zu Koalitionen addieren:
+
+```{r}
+btw.zweitstimmen %>% 
+  select(Nr, column, value) %>% 
+  spread(column, value) %>% 
+  mutate(CDUCSU=CDU + CSU, ROTROTGRÜN = SPD + GRÜNE + `DIE LINKE`) %>% 
+  select(Nr, Gültige, Ungültige, CDUCSU, ROTROTGRÜN)
+```
+
+CDUCSU ist NaN.
+
+
+
+```{r}
+btw.zweitstimmen %>% 
+  select(Nr, column, value) %>% 
+  spread(column, value) %>% 
+  mutate(CDUCSU=coalesce(CDU,0) + coalesce(CSU,0),
+         ROTROTGRÜN = SPD + GRÜNE + `DIE LINKE`) %>% 
+  select(Nr, CDUCSU, ROTROTGRÜN) %>% 
+  gather(column, value, -Nr) ->
+  btw.koalitionen
+
+btw.koalitionen
+```
+
+Jetzt wiederholen wir das gleiche Spiel mit Sieger und Zweiter noch einmal:
+
+
+```{r}
+btw.koalitionen %>% 
+  group_by(Nr) %>% 
+  arrange(-value) %>% 
+  mutate(r=row_number()) %>% 
+  filter(r==1) %>% 
+  ungroup() %>% 
+  select(Nr, koalition.sieger=column, stimmen.sieger=value) %>% 
+  arrange(Nr) ->
+  btw.sieger
+```
+
+An dieser Stelle können wir testen ob die Daten korrekt sind in dem wir ausrechnen wie viele Wahlkreise jede Partei gewonnen hat:
+
+```{r}
+table(btw.sieger$koalition.sieger)
+```
+
+Um den Vorsprung zur Partei mit den zweitmeisten Stimmen zu berechnen müssen wir erst mal herausfinden welche Partei.
+
+```{r}
+btw.koalitionen %>% 
+  group_by(Nr) %>% 
+  arrange(-value) %>% 
+  mutate(r=row_number()) %>% 
+  filter(r==2) %>%  # <-- row == 2
+  ungroup() %>% 
+  select(Nr, koalition.zweite=column, stimmen.zweiter=value) %>% 
+  arrange(Nr) ->
+  btw.zweiter
+```
+
+Und wieder vereinen zu einem Datensatz
+
+```{r}
+btw.gültig %>% 
+  left_join(btw.sieger, 'Nr') %>% 
+  left_join(btw.zweiter, 'Nr') %>% 
+  mutate(abstand=(stimmen.sieger - stimmen.zweiter)/gültig) %>% 
+  mutate(landslide= abstand >= 0.15) %>% 
+  select(Nr, abstand, landslide, everything()) ->
+  btw.landslide2
+
+btw.landslide2
+```
+
+Und zusammenfassen:
+
+```{r}
+table(btw.landslide2$landslide, btw.landslide2$koalition.sieger)
+```
+
+mit wahlkreisstrukturdaten vereinen:
+
+```{r}
+btw.landslide2 %>% 
+  left_join(read_delim('data/btw13_strukturdaten.csv', ';'))
+```
+
+
+### Daten visualisieren
+
+```{r}
+btw.landslide2 %>%
+  ggplot(aes(x=abstand, fill=koalition.sieger)) +
+  
+  geom_histogram(binwidth = 0.01)
+```
+

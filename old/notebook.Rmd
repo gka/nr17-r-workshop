@@ -1,0 +1,11 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+First let's load some R packages that we'll need.
+
+```{r}
+needs(dplyr, readr, ggplot2, stringr)
+```
+
