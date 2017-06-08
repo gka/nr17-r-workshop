@@ -281,6 +281,8 @@ setzen wir es jetzt mit `theme_set()` als neues Standard-Theme fest:
 theme_set(theme_minimal())
 ```
 
+## Mittelwerte darüberlegen
+
 Um unseren Plot abzuschließen möchten wir an den jeweiligen
 Mittelwerte des angezeigten Wertes für die verschiedenen Gruppen noch zusätzliche Linen hinzufügen. 
 
@@ -305,7 +307,7 @@ ggplot(btw) +
 
 Jetzt ist unser Plot soweit erstmal fertig!
 
-# Plot als eigene Funktion wiederverwenden
+## Plot als eigene Funktion wiederverwenden
 
 Mit ein bisschen mehr Arbeit können wir den gesamten bisherigen Code
 in einer Funktion verpacken, der wir den Namen der zu  visualisierenden
@@ -350,7 +352,7 @@ Oder _Bergbau_:
 barcode_plot('Bergbau')
 ```
 
-# PDF mit allen Barcode Varianten speichern
+## PDF mit allen Barcode Varianten speichern
 
 Als krönenden Abschluss können wir mit wenigen weiteren Zeilen 
 Code ein PDF mit Barcodes von allen Spalten in unserem Datensatz
