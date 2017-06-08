@@ -11,6 +11,7 @@ output:
 ---
 
 
+
 ## 1. Daten laden
 
 Zum laden der Daten benutzen wir das `readr` Package. readr stellt eine ganze Reihe von Befehlen bereit.

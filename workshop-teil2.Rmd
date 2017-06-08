@@ -13,6 +13,12 @@ output:
 > _"make a hundred charts and pick one"_ 
 >      --- Amanda Cox
 
+## Vorbereitung
+
+1. Zunächst bitte mit diesem das Workshop-Material herunterladen: [material.zip](https://gka.github.io/nr17-r-workshop/material.zip)
+2. Dann das ZIP-Archiv an einem beliegen Ort entpacken
+3. Anschließend die Datei `workshop-teil2.Rmd` in RStudio öffnen
+
 # Daten einlesen
 
 Zunächst laden wir die benötigten R-Pakete. `readr` stellt Funktionen 
