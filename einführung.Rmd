@@ -1,8 +1,10 @@
 ---
 title: "Kurzeinführung in R"
 output:
-  github_document:
-    html_preview: no
+  html_document:
+    css: styles.css
+    theme: cosmo
+    highlight: tango
 ---
 
 
