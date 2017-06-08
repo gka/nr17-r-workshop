@@ -1,3 +1,7 @@
+.main-container {
+	max-width: 750px;
+}
+
 p, blockquote {
     max-width: 540px;
     margin-right: auto;
