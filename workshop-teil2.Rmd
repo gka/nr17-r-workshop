@@ -90,9 +90,9 @@ ggplot(btw, aes(x=Bevölkerungsdichte, y=SPD)) +
   geom_point(color='red', shape=2)
 ```
 
-Anstatt die Eigenschaften nur "statisch" für alle Punkte zu verändern
-kann man auch weitere Spalten aus dem Datensatz verwenden und so neue
-Dimensionen zu dem Plot hinzufügen. 
+Anstatt die Eigenschaften nur "statisch" für alle Punkte gleichermaßen
+zu verändern kann man auch weitere Spalten aus dem Datensatz verwenden
+und so neue Dimensionen zu dem Plot hinzufügen. 
 
 Im folgenden Beispiel färben wir die Symbole je nach dem Wert der
 Spalte _landslide_, und wir machen die Symbolgröße abhängig von dem 
