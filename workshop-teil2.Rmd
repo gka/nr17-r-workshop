@@ -19,8 +19,8 @@ zum einlesen von CSV Dateien bereit, `dplyr` liefert praktische
 Werkzeuge zum analysieren und transformieren von Tabellen, und 
 `ggplot2` ist das Visualisierungs-Framework das wir heute benutzen.
 
-Die folgenen Code Blöcke (genannt "chunks") lassen sich durch Klick
-auf den grünen Pfeil oben rechts im Block ausführen.
+Die folgenen Code Blöcke (genannt "chunks") lassen sich in RStudio
+durch Klick auf den grünen Pfeil oben rechts im Block ausführen.
 
 ```{r setup}
 needs(readr, dplyr, ggplot2)
