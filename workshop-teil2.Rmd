@@ -295,7 +295,6 @@ Spalte _Arbeitslosenquote_:
 
 ```{r funktion aufrufen, fig.asp=0.3}
 barcode_plot('Arbeitslosenquote')
-# barcode_plot('Bergbau')
 ```
 
 Oder _Bergbau_:
