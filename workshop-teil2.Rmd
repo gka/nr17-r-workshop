@@ -283,13 +283,16 @@ theme_set(theme_minimal())
 
 ## Mittelwerte darüberlegen
 
-Um unseren Plot abzuschließen möchten wir an den jeweiligen
-Mittelwerte des angezeigten Wertes für die verschiedenen Gruppen noch zusätzliche Linen hinzufügen. 
+Um unseren Plot abzuschließen möchten wir mit weiteren Linien die
+Gruppenmittelwerte des dargestellten Wertes zum Diagramm hinzufügen. 
 
 Dazu berechnen wir zunächst die Gruppenmittelwerte mit den _dplyr_ 
-Funktionen `group_by` und `summarize`. Anschließend können wir die
-neuen Linien durch addieren eines weiteren `geom_vline()` 
-Aufrufs zum Plot hinzufügen.
+Funktionen `group_by()` und `summarize()` und speichern sie in einem
+neuen Datensatz _mittelwerte_. Anschließend können wir die neuen
+Linien durch addieren eines weiteren `geom_vline()` Aufrufs zum Plot
+hinzufügen, wobei wir mit `data=mittelwerte` den Bezug zum neu 
+erstellten Datensatz erzeugen:
+
 
 ```{r barcodes mit mittelwerten, fig.asp=0.4}
 mittelwerte <- btw %>% 
@@ -307,15 +310,29 @@ ggplot(btw) +
 
 Jetzt ist unser Plot soweit erstmal fertig!
 
-## Plot als eigene Funktion wiederverwenden
+## Plot als benutzerdefinierte Funktion wiederverwenden
 
-Mit ein bisschen mehr Arbeit können wir den gesamten bisherigen Code
-in einer Funktion verpacken, der wir den Namen der zu  visualisierenden
-Spalte übergeben können:
+Damit wir den Plot einfacher wiederverwenden können möchten wir ihn
+in einer benutzerdefinierten Funktion ablegen, der wir einfach den 
+Namen der zu visualisierenden Spalte übergeben können.
+
+Im Prinzip passiert in der Funktion genau das, was wir bis hier hin
+alles gemacht haben. Was sich ändert ist, das wir zu Beginn der 
+Funktion einen neuen Datensatz anlegen, in dem nur die Spalten 
+_gruppe_ und _wert_ vorhanden sind, wobei letztere den Wert der 
+übergebenden Spalte enthält.
+
+Mit `ggtitle()` und `xlab()` steuern wir die Beschriftung der
+Diagramme und mit dem abschließenden `theme()` Aufruf passen wir die
+Textgröße sowie die Abstände rum um den Plot an.
+
 
 ```{r barcode funktion, fig.asp=0.4}
 barcode_plot <- function(spalte) {
   
+  mycolors <- c(L_SG='#333333', C_SG='#999999',
+                L_RRG='#cc0000', C_RRG='#ee9999')
+
   data <- btw %>% 
     filter(landslide) %>% 
     select_('gruppe', wert=as.name(spalte))
@@ -325,7 +342,7 @@ barcode_plot <- function(spalte) {
     summarize(mittel=mean(wert))
 
   data %>% 
-    mutate(wert2=wert+rnorm(nrow(data), 0, 0.02)) %>%  # a little jittering
+    mutate(wert2=wert+rnorm(nrow(data), 0, 0.02)) %>%  # ein bisschen jittering
     ggplot() +
       geom_vline(aes(xintercept=wert2, color=gruppe)) +
       scale_colour_manual(values = mycolors, guide=FALSE) +
