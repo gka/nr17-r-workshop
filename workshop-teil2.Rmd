@@ -171,7 +171,7 @@ zu dem was wir eigentlich machen wollten: Barcodes!
 
 Barcodes sind nichts anderes als vertikale Linien, also fangen wir an
 mit `geom_vline`. geom_vline benötigt die aesthetic `xintercept`, die
-wir auf die Spalte _Bevölkerungsdichte_ mappen.
+wir erstmal auf die Spalte _Bevölkerungsdichte_ mappen.
 
 ```{r bunte barcodes, fig.height=2, fig.width=8}
 ggplot(btw) +
@@ -180,8 +180,8 @@ ggplot(btw) +
 
 Zunächst mal möchten wir bessere Farben benutzen, damit wir die 
 Gruppen besser lesen können. Dazu definieren wir zunächst ein paar
-Farben unserer Wahl und fügen diese dann per `scale_colour_manual`
-dem Plot hinzu:
+Farben unserer Wahl (schwarz für schwarz-gelb und rot für rot-rot-grün) 
+und fügen diese dann per `scale_colour_manual` dem Plot hinzu:
 
 ```{r schwarz rote barcodes, fig.height=2, fig.width=8}
 mycolors <- c(L_SG='#333333', C_SG='#999999', L_RRG='#cc0000', C_RRG='#ee9999')
@@ -191,10 +191,11 @@ ggplot(btw) +
   scale_colour_manual(values = mycolors)
 ```
 
-Aber leider ist immer noch alles etwas zu unübersichtlich im Plot. 
-Also benutzen wir wieder unseren Freund `facet_grid` um die 
-Barcodes in unsere vier Gruppen einzuteilen. (Mit `guide=FALSE`
-schalten wir die Farblegende ab, die nun überflüssig geworden ist).
+Leider ist immer noch alles etwas zu unübersichtlich im Plot. 
+Also benutzen wir wieder unseren Freund `facet_grid()`, um die 
+Barcodes in vier Gruppen zu gliedern. 
+
+Mit `guide=FALSE` schalten wir in `scale_colour_manual()` die Farblegende ab, die nun überflüssig geworden ist.
 
 ```{r barcodes mit facet grid, fig.asp=0.4}
 ggplot(btw) +
