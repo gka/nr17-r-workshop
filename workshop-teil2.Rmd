@@ -290,11 +290,18 @@ barcode_plot <- function(spalte) {
 }
 ```
 
-Nun können wir die Funktion wie folgt aufrufen:
+Nun können wir die Funktion einfach bequem aufrufen, z.B. für die 
+Spalte _Arbeitslosenquote_:
 
 ```{r funktion aufrufen, fig.asp=0.3}
 barcode_plot('Arbeitslosenquote')
 # barcode_plot('Bergbau')
+```
+
+Oder _Bergbau_:
+
+```{r funktion aufrufen 2, fig.asp=0.3}
+barcode_plot('Bergbau')
 ```
 
 # PDF mit allen Barcode Varianten speichern
