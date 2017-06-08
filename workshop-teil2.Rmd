@@ -446,7 +446,8 @@ btw %>%
 ```{r violin plots, fig.asp=0.5}
 btw %>%
     ggplot(aes(gruppe, Alter.unter18, fill=gruppe)) +
-    geom_violin(bw=0.2, color=FALSE, alpha=0.8) +
+    geom_violin(adjust=0.5, color='black', alpha=0.8,
+                draw_quantiles=c(0.25, 0.5, 0.75), trim=FALSE) +
     scale_fill_manual(values = mycolors, guide=FALSE) +
     coord_flip()
 ```
