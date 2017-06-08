@@ -50,7 +50,7 @@ Eintrag können wir uns den Datensatz genauer ansehen.
 
 # Fingerübungen mit ggplot
 
-Kommen wir zum spannenden Teil. Daten visualisieren mit `ggplot2`. Die
+Kommen wir zum spannenden Teil: Daten visualisieren mit `ggplot2`. Die
 Syntax ist etwas gewöhnungsbedürftig, aber sehr mächtig wenn man
 erstmal den Dreh raus hat.
 
@@ -80,6 +80,8 @@ ggplot(btw, aes(x=Bevölkerungsdichte, y=SPD)) +
   geom_point()
 ```
 
+## Plot-Eigenschaften anpassen
+
 Jede ggplot Funktion hat selbst eine Reihe von Parametern über die
 das Aussehen der Plot-Ebene angepasst werden kann.
 
@@ -105,6 +107,8 @@ ggplot(btw, aes(x=Bevölkerungsdichte, y=SPD)) +
   geom_point(aes(color=landslide, size=Ohne.Hauptschulabschluss), alpha=0.5)
 ```
 
+## Weitere Ebenen hinzufügen
+
 Man kann auch noch weitere Ebenen zum Plot hinzufügen, indem man noch mal `geom_point()` hinzufügt und die `y` aesthetic überschreibt.
 
 Hier fügen wir pro Wahlkreis noch einen weiteren Punkt zum Plot hinzu
@@ -116,6 +120,27 @@ ggplot(btw, aes(x=Bevölkerungsdichte, y=SPD)) +
   geom_point(aes(y=CDU), color='black', shape=3)
 ```
 
+Die Warnung "Removed 45 rows containing missing values" kommt daher,
+das in den bayerischen Wahlkreisen nicht CDU sondern CSU gewählt wird.
+Wir können das Problem lösen, in dem wir eine neue Spalte _CDUCSU_ 
+anlegen, in der beide Parteien zusammengefasst werden:
+
+```{r}
+btw <- btw %>% 
+  mutate(CDUCSU=coalesce(CDU, CSU))
+```
+
+Wenn wir den obigen Plot nun noch einmal für die neue _CDUCSU_ Spalte
+erzeugen ist die Warnung verschwunden:
+
+```{r cducsu}
+ggplot(btw, aes(x=Bevölkerungsdichte, y=SPD)) +
+  geom_point(color='red') +
+  geom_point(aes(y=CDUCSU), color='black', shape=3)
+```
+
+## Logarithmische Achse
+
 Da wir feststellen dass sich fast alle Punkte sich an den linken Rand des Plots
 drängen, bietet sich vielleicht eine logarithmische x-Achse an. Und 
 auch das können wir mit einer weiteren "Addition" dem Plot hinzufügen:
@@ -123,24 +148,42 @@ auch das können wir mit einer weiteren "Addition" dem Plot hinzufügen:
 ```{r plot mit log scale}
 ggplot(btw, aes(x=Bevölkerungsdichte, y=SPD)) +
   geom_point(color='red') +
-  geom_point(aes(y=CDU), color='black', shape=3) +
+  geom_point(aes(y=CDUCSU), color='black', shape=3) +
   scale_x_log10()
 ```
 
+## Trend-Linien hinzufügen
+
 Wie wäre es mit Trend-Linien für unsere beiden Punktmengen? Kein 
-Problem mit der ggplot-Funktion `geom_smooth`. Der Parameter 
-`method='lm'` legt fest das wir eine lineare Trendlinie möchten, und
-mit `se=FALSE` schalten wir den grauen Hintergrund für das
-Vertrauensinterval ab.
+Problem mit der ggplot-Funktion `geom_smooth()`. Auch hier fügen wir
+einen zweiten Aufruf für die CDU Punkte ein und überschreiben die
+`y` Eigenschaft.
 
 ```{r plot mit trendlinien}
 ggplot(btw, aes(x=Bevölkerungsdichte, y=SPD)) +
   geom_point(color='red') +
-  geom_point(aes(y=CDU), color='black', shape=3) +
-  geom_smooth(method='lm', color='red', se=FALSE) +
-  geom_smooth(aes(y=CDU), method='lm', color='black', se=FALSE) +
+  geom_point(aes(y=CDUCSU), color='black', shape=3) +
+  geom_smooth(color='red') +
+  geom_smooth(aes(y=CDUCSU), color='black') +
   scale_x_log10()
 ```
+
+Standardmäßig benutzt `geom_smooth()` eine Loess-Funktion zur 
+Annäherung der Messwerte und zeigt im Hintergrund einen grauen Bereich
+für das Vertrauensinterval an. Mit dem Parameter `method='lm'` legen 
+wir fest das wir eine gerade (lineare) Trendlinie möchten, und
+mit `se=FALSE` schalten das Vertrauensinterval ab.
+
+```{r plot mit geraden trendlinien}
+ggplot(btw, aes(x=Bevölkerungsdichte, y=SPD)) +
+  geom_point(color='red') +
+  geom_point(aes(y=CDUCSU), color='black', shape=3) +
+  geom_smooth(color='red', method='lm', se=FALSE) +
+  geom_smooth(aes(y=CDUCSU), color='black', method='lm', se=FALSE) +
+  scale_x_log10()
+```
+
+## Vertikale min/max Linien
 
 Oder wie wäre es mit vertikalen Linien die die für jeden Wahlkreis
 beiden Punkte verbinden? Dazu können wir z.B. die Funktion 
@@ -150,18 +193,20 @@ beiden Punkte verbinden? Dazu können wir z.B. die Funktion
 ```{r vertikale linien}
 ggplot(btw, aes(x=Bevölkerungsdichte, y=SPD)) +
   geom_point(color='red') +
-  geom_point(aes(y=CDU), color='black') +
-  geom_linerange(aes(ymin=SPD, ymax=CDU, color=winner), alpha=0.3) +
+  geom_point(aes(y=CDUCSU), color='black') +
+  geom_linerange(aes(ymin=SPD, ymax=CDUCSU), alpha=0.2) +
   scale_x_log10()
 ```
+
+## Small multiples
 
 Es kommt noch besser: mit `facet_grid` können wir den Plot in mehrere Panels unterteilen, z.b. nach landslide Wahlkreisen und nicht-landslide Wahlkreisen:
 
 ```{r split plot mit trendlinien}
 ggplot(btw, aes(x=Bevölkerungsdichte, y=SPD)) +
   geom_point(color='red') +
-  geom_point(aes(y=CDU), color='black') +
-  geom_linerange(aes(ymin=SPD, ymax=CDU, color=winner), alpha=0.3) +
+  geom_point(aes(y=CDUCSU), color='black') +
+  geom_linerange(aes(ymin=SPD, ymax=CDUCSU), alpha=0.2) +
   scale_x_log10() +
   facet_grid(. ~ landslide)
 ```
