@@ -35,16 +35,18 @@ theme_set(theme_light())
 
 Nun laden wir den im ersten Teil vorbereiteten Datensatz 
 `btw-final.csv` und speichern ihn in der Variable `btw`. Die `mutate`
-Anweisung in der zweiten Zeile können wir erstmal ignorieren.
-
-Nach dem Ausführen des Blocks erscheint oben links im "Environment" 
-Fenster ein neuer Eintrag "btw". Durch klick auf den Eintrag können
-wir uns den geladenen Datensatz genauer ansehen.
+Anweisung in der zweiten Zeile können wir erstmal ignorieren (sie 
+legt nur die Reihenfolge fest, in der die Werte in der Spalte 
+_gruppe_ nachher in den Diagrammen auftauchen).
 
 ```{r daten einlesen}
 btw <- read_csv('btw-final.csv') %>% 
   mutate(gruppe=factor(gruppe, c('L_SG', 'C_SG', 'C_RRG', 'L_RRG')))
 ```
+
+Nach dem Ausführen des Blocks erscheint in RStudio oben links im 
+"Environment" Fenster ein neuer Eintrag "btw". Durch klick auf den 
+Eintrag können wir uns den Datensatz genauer ansehen.
 
 # Fingerübungen mit ggplot
 
@@ -60,9 +62,9 @@ ggplot(btw)
 ```
 
 Über den zweiten Parameter `mapping` kann man Spalten aus dem 
-Datensatz zu  sogenannten "aesthetics" zuordnen, wie z.B. `x`, `y` 
-oder `color`. ggplot erstellt dann ggf. schon automatisch Achsen und
-Gitternetzlinien.
+Datensatz zu Plot-Eigenschaften (den sogenannten "aesthetics") 
+zuordnen, wie z.B. `x`, `y` oder `color`. ggplot erstellt dann 
+ggf. schon automatisch Achsen und Gitternetzlinien.
 
 ```{r nur achsen}
 ggplot(btw, aes(x=Bevölkerungsdichte, y=SPD))
