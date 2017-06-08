@@ -1,0 +1,122 @@
+---
+title: "Workshop: Statistische Daten und Wahlergebnisse als Barcodes visualisieren"
+output:
+  html_document:
+    css: styles.css
+    toc: true
+    toc_float: true
+    theme: cosmo
+    highlight: tango
+---
+
+
+## 1. Daten laden
+
+Zum laden der Daten benutzen wir das `readr` Package. readr stellt eine ganze Reihe von Befehlen bereit.
+
+```{r setup}
+needs(readr, dplyr)
+```
+
+Zunächst werden wir die (zuvor bereinigten) Wahlergebnisse laden. Dazu benutzen wir die `read_tsv` Funktion vom `readr` Paket. Wir speichern das Ergebnis in der Variable `btw`.
+
+```{r daten laden}
+btw <- read_tsv('data/cleaned/btw09_kerg.csv')
+```
+
+**Tipp:** oben rechts im "Environment" Panel zeigt RStudio alle angelegten Variablen und Tabellen. Per Klick lässt sich unsere Tabelle `btw` anschauen.
+
+```{r daten laden und spalten selektieren}
+btw <- read_tsv('data/cleaned/btw09_kerg.csv') %>% 
+  select(Nr, Wahlkreis, Land,
+         Total=Gültige.Zweitstimmen,
+         CDU=CDU.Zweitstimmen,
+         SPD=SPD.Zweitstimmen,
+         CSU=CSU.Zweitstimmen,
+         FDP=FDP.Zweitstimmen,
+         GRÜNE=GRÜNE.Zweitstimmen,
+         LINKE=`DIE LINKE.Zweitstimmen`)
+```
+
+**Tipp:** Mit der Hilfefunktion in RStudio können wir mehr über alle Befehle erfahren. Dazu einfach den Eingabe-Cursor irgendwo auf das Wort "select" setzen und die F1 Taste drücken.
+
+## 2. Stimmen der beiden politischen Blöcke berechnen
+
+Um neue Spalten zu berechnen benutzen wir das Paket `dplyr` (Link für später: [Introduction to dplyr](https://cran.rstudio.com/web/packages/dplyr/vignettes/introduction.html))
+
+Aus den Zweitstimmen der großen Parteien berechnen wir nun die Gesamtstimmen zweier Blöcke: SPD + LINKE + GRÜNE (RRG) sowie Schwarz-Gelb (SG)
+
+Gesamtstimmen der Koalitionen Rot-Rot-Grün (RRG) und CDU/CSU+FDP (SG) berechnen:
+  
+```{r gesamtstimmen zweier blöcke}
+btw_koal <- btw %>%
+  mutate(RRG=SPD + GRÜNE + LINKE,
+         SG=CDU + CSU + FDP)
+```
+
+Schauen wir uns das Ergebnis an fällt auf das wir immer nur `NA` bei Schwarz-Gelb erhalten. Woran liegt das?
+
+CDU uns CSU sind niemals gleichzeitig definiert. Was wir brauchen ist eine Funktion die automatisch entweder den CDU oder CSU Wert benutzt, je nach dem welcher definiert ist. Die `coalesce` Funktion macht genau das:
+
+```{r CDU oder CSU mit coalesce}
+btw_koal <- btw %>%
+  mutate(RRG=SPD + GRÜNE + LINKE,
+         SG=coalesce(CDU, CSU) + FDP)
+```
+
+
+# 3. Prozentuale Stimmendifferenz berechnen:
+  
+1. margin = `100 * (SG - RRG)/(SG + RRG)`
+2. sieger
+3. landslide, wenn margin 10 Prozent oder mehr
+4. klasse
+
+```{r prozentdifferenz berechnen}
+btw_margin <- btw_koal %>% 
+  # lege ein neues feld "margin" an
+  mutate(margin=round(100 * (SG - RRG)/(SG + RRG), 2)) %>% 
+  # lege ein neues feld "winner" an
+  mutate(winner=ifelse(SG > RRG, 'SG', 'RRG')) %>% 
+  # lege ein neues feld "landslide" an
+  mutate(landslide=abs(margin) >= 10) %>% 
+  # lege ein neues feld "gruppe" an
+  mutate(gruppe=paste0(ifelse(landslide,'L_','C_'), winner)) %>% 
+  # sortiere die gruppen
+  mutate(gruppe=factor(gruppe, c('L_SG', 'C_SG', 'C_RRG', 'L_RRG')))
+```
+
+Testen:
+
+```{r}
+table(btw_margin$landslide)
+table(btw_margin$landslide, btw_margin$winner)
+```
+
+TO DO: Wiederholen mit Wahlergebnissen früherer Wahlen!
+
+## 4. Mit Strukturdaten kombinieren
+
+Strukturdaten dazuladen und per left_join verbinden:
+  
+```{r strukturdaten laden}
+btw_struktur <- read_tsv('data/cleaned/btw13_strukturdaten.csv') %>%
+  select(-Wahlkreis) %>% 
+  filter(Nr < 300)
+```
+
+und per `left_join` verbinden
+  
+```{r mit left join verbinden}
+btw_final <- btw_margin %>% 
+  left_join(btw_struktur, by ='Nr')
+```
+
+Und für Teil 2 speichern:
+
+```{r und speichern}
+btw_final %>% write_csv('btw-final.csv')
+```
+
+
+

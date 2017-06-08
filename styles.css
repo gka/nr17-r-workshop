@@ -1,0 +1,24 @@
+p, h2, h1, blockquote {
+    max-width: 540px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+p img {
+	display: block;
+	margin-bottom: 20px;
+}
+
+.sourceCode {
+    margin-top: 10px;
+    margin-bottom: 15px;
+}
+
+pre:not(.sourceCode) {
+    color: #999;
+    border-color: #ddd;
+    max-width: 560px;
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 12px;
+}
