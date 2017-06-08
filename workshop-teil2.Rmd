@@ -306,7 +306,7 @@ barcode_plot('Bergbau')
 
 # PDF mit allen Barcode Varianten speichern
 
-Und als krönenden Abschluss können wir mit wenigen weiteren Zeilen 
+Als krönenden Abschluss können wir mit wenigen weiteren Zeilen 
 Code ein PDF mit Barcodes von allen Spalten in unserem Datensatz
 erzeugen.
 
