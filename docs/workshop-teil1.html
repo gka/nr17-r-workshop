@@ -248,7 +248,7 @@ div.tocify {
 
 
 <div id="daten-laden" class="section level2">
-<h2>1. Daten laden</h2>
+<h2><span class="header-section-number">0.1</span> 1. Daten laden</h2>
 <p>Zum laden der Daten benutzen wir das <code>readr</code> Package. readr stellt eine ganze Reihe von Befehlen bereit.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">needs</span>(readr, dplyr)</code></pre></div>
 <p>Zunächst werden wir die (zuvor bereinigten) Wahlergebnisse laden. Dazu benutzen wir die <code>read_tsv</code> Funktion vom <code>readr</code> Paket. Wir speichern das Ergebnis in der Variable <code>btw</code>.</p>
@@ -296,7 +296,7 @@ div.tocify {
 <p><strong>Tipp:</strong> Mit der Hilfefunktion in RStudio können wir mehr über alle Befehle erfahren. Dazu einfach den Eingabe-Cursor irgendwo auf das Wort “select” setzen und die F1 Taste drücken.</p>
 </div>
 <div id="stimmen-der-beiden-politischen-blocke-berechnen" class="section level2">
-<h2>2. Stimmen der beiden politischen Blöcke berechnen</h2>
+<h2><span class="header-section-number">0.2</span> 2. Stimmen der beiden politischen Blöcke berechnen</h2>
 <p>Um neue Spalten zu berechnen benutzen wir das Paket <code>dplyr</code> (Link für später: <a href="https://cran.rstudio.com/web/packages/dplyr/vignettes/introduction.html">Introduction to dplyr</a>)</p>
 <p>Aus den Zweitstimmen der großen Parteien berechnen wir nun die Gesamtstimmen zweier Blöcke: SPD + LINKE + GRÜNE (RRG) sowie Schwarz-Gelb (SG)</p>
 <p>Gesamtstimmen der Koalitionen Rot-Rot-Grün (RRG) und CDU/CSU+FDP (SG) berechnen:</p>
@@ -310,7 +310,7 @@ div.tocify {
          <span class="dt">SG=</span><span class="kw">coalesce</span>(CDU, CSU) +<span class="st"> </span>FDP)</code></pre></div>
 </div>
 <div id="prozentuale-stimmendifferenz-berechnen" class="section level1">
-<h1>3. Prozentuale Stimmendifferenz berechnen:</h1>
+<h1><span class="header-section-number">1</span> 3. Prozentuale Stimmendifferenz berechnen:</h1>
 <ol style="list-style-type: decimal">
 <li>margin = <code>100 * (SG - RRG)/(SG + RRG)</code></li>
 <li>sieger</li>
@@ -340,7 +340,7 @@ div.tocify {
 ##   TRUE   77 111</code></pre>
 <p>TO DO: Wiederholen mit Wahlergebnissen früherer Wahlen!</p>
 <div id="mit-strukturdaten-kombinieren" class="section level2">
-<h2>4. Mit Strukturdaten kombinieren</h2>
+<h2><span class="header-section-number">1.1</span> 4. Mit Strukturdaten kombinieren</h2>
 <p>Strukturdaten dazuladen und per left_join verbinden:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">btw_struktur &lt;-<span class="st"> </span><span class="kw">read_tsv</span>(<span class="st">'data/cleaned/btw13_strukturdaten.csv'</span>) %&gt;%
 <span class="st">  </span><span class="kw">select</span>(-Wahlkreis) %&gt;%<span class="st"> </span>

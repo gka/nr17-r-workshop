@@ -7,12 +7,13 @@ output:
     toc_float: true
     theme: cosmo
     highlight: tango
+    number_sections: true
 ---
 
 > _"make a hundred charts and pick one"_ 
 >      --- Amanda Cox
 
-## Daten einlesen
+# Daten einlesen
 
 Zunächst laden wir die benötigten R-Pakete. `readr` stellt Funktionen 
 zum einlesen von CSV Dateien bereit, `dplyr` liefert praktische 
@@ -45,7 +46,7 @@ btw <- read_csv('btw-final.csv') %>%
   mutate(gruppe=factor(gruppe, c('L_SG', 'C_SG', 'C_RRG', 'L_RRG')))
 ```
 
-## Fingerübungen mit ggplot
+# Fingerübungen mit ggplot
 
 Kommen wir zum spannenden Teil. Daten visualisieren mit `ggplot2`. Die
 Syntax ist etwas gewöhnungsbedürftig, aber sehr mächtig wenn man
@@ -67,34 +68,45 @@ Gitternetzlinien.
 ggplot(btw, aes(x=Bevölkerungsdichte, y=SPD))
 ```
 
-Um nun Datenpunkte auf den Plot zu bekommen "addieren" wir weitere
-Funktionen zu dem `ggplot` Ergebnis. [1]
+Um nun Datenpunkte auf den Plot zu bekommen müssen wir weitere Ebenen
+zum Plot hinzufügen. Dazu "addieren" wir weitere ggplot-Funktionen zu
+dem Ergebnis des ersten `ggplot()` Aufrufs. In diesem Fall wollen wir
+Punkte, also benutzen wir `geom_point()`:
 
 ```{r schwarze punkte}
 ggplot(btw, aes(x=Bevölkerungsdichte, y=SPD)) +
   geom_point()
 ```
 
-Form, Farbe, Größe und viele weitere visuelle Eigenschaften der
-Symbole lassen sich über Parameter ändern (für eine Liste aller
-möglichen Parameter einfach die Hilfefunktion benutzen):
+Jede ggplot Funktion hat selbst eine Reihe von Parametern über die
+das Aussehen der Plot-Ebene angepasst werden kann.
+
+Im Falle von `geom_point` lassen sich Form, Farbe, Größe und viele 
+weitere visuelle Eigenschaften der Symbole ändern (für eine Liste
+aller möglichen Parameter können wir die Hilfefunktion benutzen):
 
 ```{r rote dreiecke}
 ggplot(btw, aes(x=Bevölkerungsdichte, y=SPD)) +
   geom_point(color='red', shape=2)
 ```
 
-Anstatt die Eigenschaften nur fix für alle Punkte zu verändern kann
-man auch weitere Spalten aus dem Datensatz verwenden:
+Anstatt die Eigenschaften nur "statisch" für alle Punkte zu verändern
+kann man auch weitere Spalten aus dem Datensatz verwenden und so neue
+Dimensionen zu dem Plot hinzufügen. 
+
+Im folgenden Beispiel färben wir die Symbole je nach dem Wert der
+Spalte _landslide_, und wir machen die Symbolgröße abhängig von dem 
+Wert in der Spalte _Ohne.Hauptschulabschluss_.
 
 ```{r bubble plot}
 ggplot(btw, aes(x=Bevölkerungsdichte, y=SPD)) +
   geom_point(aes(color=landslide, size=Ohne.Hauptschulabschluss), alpha=0.5)
 ```
 
-Man kann auch sehr einfach eine weitere "Ebene" zum Plot hinzufügen,
-indem man einfach noch mal `geom_point()` hinzufügt und die `y` 
-aesthetic überschreibt:
+Man kann auch noch weitere Ebenen zum Plot hinzufügen, indem man noch mal `geom_point()` hinzufügt und die `y` aesthetic überschreibt.
+
+Hier fügen wir pro Wahlkreis noch einen weiteren Punkt zum Plot hinzu
+aber benutzen das CDU Wahlergebnis für die y-Koordinaten: 
 
 ```{r roten punkte und schwarze kreuze}
 ggplot(btw, aes(x=Bevölkerungsdichte, y=SPD)) +
@@ -102,8 +114,8 @@ ggplot(btw, aes(x=Bevölkerungsdichte, y=SPD)) +
   geom_point(aes(y=CDU), color='black', shape=3)
 ```
 
-Wir sehen das sich fast alle Punkte sich an den linken Rand des Plots
-drängen, da bietet sich vielleicht eine logarithmische x-Achse an. Und 
+Da wir feststellen dass sich fast alle Punkte sich an den linken Rand des Plots
+drängen, bietet sich vielleicht eine logarithmische x-Achse an. Und 
 auch das können wir mit einer weiteren "Addition" dem Plot hinzufügen:
 
 ```{r plot mit log scale}
@@ -114,7 +126,10 @@ ggplot(btw, aes(x=Bevölkerungsdichte, y=SPD)) +
 ```
 
 Wie wäre es mit Trend-Linien für unsere beiden Punktmengen? Kein 
-Problem mit ggplot:
+Problem mit der ggplot-Funktion `geom_smooth`. Der Parameter 
+`method='lm'` legt fest das wir eine lineare Trendlinie möchten, und
+mit `se=FALSE` schalten wir den grauen Hintergrund für das
+Vertrauensinterval ab.
 
 ```{r plot mit trendlinien}
 ggplot(btw, aes(x=Bevölkerungsdichte, y=SPD)) +
@@ -125,7 +140,10 @@ ggplot(btw, aes(x=Bevölkerungsdichte, y=SPD)) +
   scale_x_log10()
 ```
 
-Oder wie wäre es mit vertikalen Linien die die beiden Punkte verbinden?
+Oder wie wäre es mit vertikalen Linien die die für jeden Wahlkreis
+beiden Punkte verbinden? Dazu können wir z.B. die Funktion 
+`geom_linerange` verwenden, der wir nur die Parameter `ymin` und
+`ymax` mitteilen müssen.
 
 ```{r vertikale linien}
 ggplot(btw, aes(x=Bevölkerungsdichte, y=SPD)) +
@@ -135,9 +153,7 @@ ggplot(btw, aes(x=Bevölkerungsdichte, y=SPD)) +
   scale_x_log10()
 ```
 
-Es kommt noch besser: mit `facet_grid` können wir den Plot ganz 
-einfach in mehrere Panels unterteilen, z.b. nach Landslide Wahlkreisen
-und nicht-landslide Wahlkreisen:
+Es kommt noch besser: mit `facet_grid` können wir den Plot in mehrere Panels unterteilen, z.b. nach landslide Wahlkreisen und nicht-landslide Wahlkreisen:
 
 ```{r split plot mit trendlinien}
 ggplot(btw, aes(x=Bevölkerungsdichte, y=SPD)) +
@@ -148,12 +164,14 @@ ggplot(btw, aes(x=Bevölkerungsdichte, y=SPD)) +
   facet_grid(. ~ landslide)
 ```
 
-Wir wir sehen sind die Möglichkeiten schier endlos. Doch nun zurück 
+Wir wir sehen sind die Möglichkeiten fast endlos. Doch nun zurück 
 zu dem was wir eigentlich machen wollten: Barcodes!
 
-## Barcodes visualisieren
+# Barcodes visualisieren!
 
-Barcodes sind nichts anderes als vertikale Linien:
+Barcodes sind nichts anderes als vertikale Linien, also fangen wir an
+mit `geom_vline`. geom_vline benötigt die aesthetic `xintercept`, die
+wir auf die Spalte _Bevölkerungsdichte_ mappen.
 
 ```{r bunte barcodes, fig.height=2, fig.width=8}
 ggplot(btw) +
@@ -161,8 +179,9 @@ ggplot(btw) +
 ```
 
 Zunächst mal möchten wir bessere Farben benutzen, damit wir die 
-Gruppen besser lesen können. Dazu nehmen wir `scale`
-
+Gruppen besser lesen können. Dazu definieren wir zunächst ein paar
+Farben unserer Wahl und fügen diese dann per `scale_colour_manual`
+dem Plot hinzu:
 
 ```{r schwarz rote barcodes, fig.height=2, fig.width=8}
 mycolors <- c(L_SG='#333333', C_SG='#999999', L_RRG='#cc0000', C_RRG='#ee9999')
@@ -172,9 +191,10 @@ ggplot(btw) +
   scale_colour_manual(values = mycolors)
 ```
 
-Immer noch alles etwas zu unübersichtlich im Plot. Also nehmen wir 
-wieder unseren Freund `facet_grid` zur Hilfe. (Mit `guide=FALSE`
-schalten wir die Farblegende ab, die nun überflüssig geworden ist):
+Aber leider ist immer noch alles etwas zu unübersichtlich im Plot. 
+Also benutzen wir wieder unseren Freund `facet_grid` um die 
+Barcodes in unsere vier Gruppen einzuteilen. (Mit `guide=FALSE`
+schalten wir die Farblegende ab, die nun überflüssig geworden ist).
 
 ```{r barcodes mit facet grid, fig.asp=0.4}
 ggplot(btw) +
@@ -183,7 +203,7 @@ ggplot(btw) +
   facet_grid(gruppe ~ .)
 ```
 
-Natürlich können wir auch hier wieder einfach eine logarithmische
+Natürlich können wir auch hier wieder eine logarithmische
 Achse benutzen, in dem wir die `scale_x_log10()` hinzufügen:
 
 ```{r barcodes mit log scale, fig.asp=0.4}
@@ -194,8 +214,8 @@ ggplot(btw) +
   scale_x_log10()
 ```
 
-Die grauen Ränder um den Plot können wir entfernen in dem wir einfach
-das `theme_minimal` verwenden:
+Die grauen Ränder um den Plot können wir entfernen in dem wir das
+`theme_minimal()` verwenden:
 
 ```{r barcodes mit theme_minimal, fig.asp=0.4}
 ggplot(btw) +
@@ -206,16 +226,20 @@ ggplot(btw) +
   theme_minimal()
 ```
 
-Damit wir in Zukunft nicht jedes Mal wieder das Theme zu setzen legen
-wir es jetzt einfach als neues Standard-Theme fest:
+Damit wir in Zukunft nicht jedes Mal wieder das Theme hinzufügen müssen,
+setzen wir es jetzt mit `theme_set()` als neues Standard-Theme fest:
 
 ```{r minimal theme}
 theme_set(theme_minimal())
 ```
 
-Um unseren Plot abzuschließen möchten wir noch zusätzliche Linen
-hinzufügen an den jeweiligen Mittelwerte des angezeigten Wertes für 
-die verschiedenen Gruppen 
+Um unseren Plot abzuschließen möchten wir an den jeweiligen
+Mittelwerte des angezeigten Wertes für die verschiedenen Gruppen noch zusätzliche Linen hinzufügen. 
+
+Dazu berechnen wir zunächst die Gruppenmittelwerte mit den _dplyr_ 
+Funktionen `group_by` und `summarize`. Anschließend können wir die
+neuen Linien durch addieren eines weiteren `geom_vline()` 
+Aufrufs zum Plot hinzufügen.
 
 ```{r barcodes mit mittelwerten, fig.asp=0.4}
 mittelwerte <- btw %>% 
@@ -231,13 +255,13 @@ ggplot(btw) +
                color='blue', size=1.5)
 ```
 
-Jetzt ist unser Plot soweit erstmal fertig.
+Jetzt ist unser Plot soweit erstmal fertig!
 
-## Plot als eigene Funktion wiederverwenden
+# Plot als eigene Funktion wiederverwenden
 
 Mit ein bisschen mehr Arbeit können wir den gesamten bisherigen Code
-in einer Funktion verpacken, der wir einfach den Namen der zu 
-visualisierenden Spalte übergeben können:
+in einer Funktion verpacken, der wir den Namen der zu  visualisierenden
+Spalte übergeben können:
 
 ```{r barcode funktion, fig.asp=0.4}
 barcode_plot <- function(spalte) {
@@ -272,23 +296,47 @@ barcode_plot('Arbeitslosenquote')
 # barcode_plot('Bergbau')
 ```
 
+# PDF mit allen Barcode Varianten speichern
+
 Und als krönenden Abschluss können wir mit wenigen weiteren Zeilen 
 Code ein PDF mit Barcodes von allen Spalten in unserem Datensatz
-erzeugen:
+erzeugen.
 
-```{r pdf erzeugen, include=FALSE, eval=FALSE}
+Zunächst stellen wir sicher, das das Paket `gridExtra` geladen wird:
+
+```{r pdf 1}
 needs(gridExtra)
+```
 
+Dann legen wir einen Vektor von Spaltennamen an, die sich für die
+Visualisierung als Barcode eignen:
+
+```{r pdf spalten}
 spalten <- colnames(btw)[18:55]
+```
 
+Mit `lapply` führen wir unsere `barcode_plot` Funktion dann mit einem
+Rutsch für alle Spalten in unserem Vektor auf. Wir leiten das Ergebnis
+direkt in die `marrangeGrob` Funktion weiter, die die einzelnen Plots
+auf mehrere Seiten verteilt anordnet (in einem 7-zeiligen und 
+1-spaltigen Layout):
+
+```{r pdf arrangieren, cache=TRUE}
 plots <- lapply(spalten, barcode_plot) %>% 
   marrangeGrob(nrow=7, ncol=1, padding=unit(10, "mm"))
+```
 
+Anschließend benutzen wir `ggsave` um die arrangierten Plots in einer
+PDF-Datei im DIN A4 Format zu speichern.
+
+```{r pdf speichern, dependson=plots}
 ggsave("plots.pdf", plots, width=210, height=297, units='mm')
 ```
 
 
-## Extra: Weitere nützliche ggplot Funktionen 
+# Extra: Weitere nützliche ggplot Funktionen 
+
+Falls wir noch Zeit am Ende haben, oder zum Weiterüben zu Hause:
 
 **Histogramme** von Variablen verschiedener Gruppen vergleichen:
 
