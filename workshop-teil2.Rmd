@@ -38,7 +38,7 @@ needs(readr, dplyr, ggplot2)
 theme_set(theme_light())
 ```
 
-Nun laden wir den im ersten Teil vorbereiteten Datensatz 
+Nun laden wir den im [ersten Teil](workshop-teil1.html) vorbereiteten Datensatz 
 `btw-final.csv` und speichern ihn in der Variable `btw`. Die `mutate`
 Anweisung in der zweiten Zeile können wir erstmal ignorieren (sie 
 legt nur die Reihenfolge fest, in der die Werte in der Spalte 
